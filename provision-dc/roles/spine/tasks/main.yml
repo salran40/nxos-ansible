@@ -4,84 +4,89 @@
 #  Enable Features via nxos_feature
 #####
 
-- name: Ensure Features are Enabled on switches
-  nxos_feature: feature={{ item }} state = enabled host={{ inventory_hostname }}
-  with_items: spine_features
+#- name: ensure Features are Enabled on switches
+#  nxos_feature: feature={{ item }} state=enabled host={{ inventory_hostname }}
+#  with_items: "{{ spine_features }}"
 
 ####
 # Enable remaining features via nxos_command
 # TODO : Move to nxos_feature - sent pull request
 ####
 
--name: Ensure additional features are enabled on switches
+- name: Ensure additional features are enabled on switches
   nxos_command: 
-    host: {{ inventory_hostname }}
+    host: "{{ inventory_hostname }}"
     type: config
     command: ['feature fabric forwarding', 'feature nv overlay', 'nv overlay evpn']
 
 #####
 #  Loopback and L3 Interfaces
 #####
--name: Underlay Loopback
-  nxos_interface:  interface=loopback0 host = {{ inventory_hostname }} admin_state = up mode = layer3
+- name: Underlay Loopback
+  nxos_interface:  interface=loopback0 host={{ inventory_hostname }} admin_state=up mode=layer3
 
--name: Underlay Loopback IP
+- name: Underlay Loopback IP
   nxos_ipv4_interface: interface=loopback0 ip_addr={{ ip_loopback0 }} mask=32 host={{ inventory_hostname}} state=present
 
 #####
 # L3 Interface
 #####
 
--name : Underlay Interfaces
-  nxos_interface: interface= {{ item.intf }} host = {{ inventory_hostname }} admin_state = up mode=layer3 
-  with_items: spine_leaf_interfaces
+- name : Underlay Interfaces
+  nxos_interface: interface={{ item.intf }} host={{ inventory_hostname }} admin_state=up mode=layer3 
+  with_items: "{{ spine_leaf_interfaces }}"
 
--name : Underlay Interfaces IP
-  nxos_ipv4_interface: interface= {{item.intf}} ip_addr={{ item.intf_ip }} mask= {{item.mask}} host={{ inventory_hostname}} state=present
-  with_items: spine_leaf_interfaces
+- name : Underlay Interfaces IP
+  nxos_ipv4_interface: interface={{ item.intf }} ip_addr={{ item.intf_ip }} mask={{ item.mask }} host={{ inventory_hostname}} state=present
+  with_items:
+    - "{{ spine_leaf_interfaces }}"
 
 ###
--name : Enable OSPF
+- name : Enable OSPF
   nxos_command:
-  host: {{ inventory_hostname }}
+    host: "{{ inventory_hostname }}"
     type: config
     command: "router ospf 1"
+
 ###
 ######
 # IP PIM Global Configuration
 ######
 
--name: Configure Loopback1 for PIM
-  nxos_interface: interface=loopback1 host = {{ inventory_hostname }} admin_state = up mode = layer3
+- name: Configure Loopback1 for PIM
+  nxos_interface: interface=loopback1 host={{ inventory_hostname }} admin_state=up mode=layer3
 
--name: Configure IP Address on Loopback1
-  nxos_ipv4_interface: interface = loopback1 host = {{ inventory_hostname }} state = present ip_addr={{ ip_loopback1 }} mask=32
+- name: Configure IP Address on Loopback1
+  nxos_ipv4_interface: interface=loopback1 host={{ inventory_hostname }} state=present ip_addr={{ ip_loopback1 }} mask=32
 
--name: Configure PIM RP-adrdress
+- name: Configure PIM RP-adrdress
   nxos_command:
-  host: {{ inventory_hostname }}
+    host: "{{ inventory_hostname }}"
     type: config
-    command: ["ip pim rp-address {{ pim_rp_address }} group-list {{pim_group_list}}", "ip pim ssm range {{pim_ssm_range}}"]
+    command: ['ip pim rp-address {{ pim_rp_address }} group-list {{ pim_group_list }} ', 'ip pim ssm range {{ pim_ssm_range }}']
 
--name: Configure anycast-rp
+- name: Configure anycast-rp
   nxos_command:
-  host: {{ inventory_hostname }}
+    host: "{{ inventory_hostname }}"
     type: config
-    command: ["ip pim anycast-rp {{ item.rp_address }} {{ rp_address_set }}"]
-    with_items: pim_anycast_rp
+    command: 'ip pim anycast-rp {{ item.rp_address }} {{ item.rp_address_set }}'
+  with_items: "{{ pim_anycast_rp }}"
 
 
 ### Configure OSPF on Interfaces
--name: Configure OSPF on Ethernet  Interfaces
-    host: {{ inventory_hostname }}
+- name: Configure OSPF on Ethernet  Interfaces
+  nxos_command:
+    host: "{{ inventory_hostname }}"
     type: config
-    command: ["interface {{item.intf}}", "ip ospf network point-to-point", "ip router ospf 1 area 0.0.0.0"]
-    with_items: spine_leaf_interfaces
+    command: ['interface {{ item.intf }} ', 'ip ospf network point-to-point', 'ip router ospf 1 area 0.0.0.0']
+  with_items: "{{ spine_leaf_interfaces }}"
 
--name: Configure OSPF on Loopbacks
-    host: {{ inventory_hostname }}
+- name: Configure OSPF on Loopbacks
+  nxos_command:
+    host: "{{ inventory_hostname }}"
     type: config
-    command: ["interface {{ item }} ", "ip ospf network point-to-point", "ip router ospf 1 area 0.0.0.0"]
-    with_items:
-      -loopback0
-      -loopback1
+    command: ['interface {{ item }} ', 'ip ospf network point-to-point', 'ip router ospf 1 area 0.0.0.0']
+  with_items:
+    - loopback0
+    - loopback1
+
