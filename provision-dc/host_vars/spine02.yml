@@ -1,0 +1,7 @@
+---
+
+ip_loopback0: 3.3.3.3
+
+spine_leaf_interfaces:
+    - {intf: Ethernet2/15, intf_ip: 10.1.1.10, mask:30 }
+    - {intf: Ethernet2/45, intf_ip: 10.1.1.6, mask:30 }

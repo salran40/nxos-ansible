@@ -1,0 +1,19 @@
+---
+# group_vars/all.yml
+
+# Underlay 
+l3_protocol: "ospf"
+
+# OSPF
+
+ospf_id: 1
+ospf_area: 0.0.0.0
+
+# BGP : 
+bgp_as: "65000"
+
+# PIM
+
+pim_group_list: 224.0.0.0/4
+pim_ssm_range: 232.0.0.0/8
+mcast_group: 239.1.1.1

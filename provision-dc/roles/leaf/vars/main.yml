@@ -1,0 +1,18 @@
+---
+
+leaf_features:
+    -ospf
+    -bgp
+    -pim
+    -interface-vlan
+    -vn-segment-vlan-based
+
+bgp_neighbors:
+    - 3.3.3.3
+    - 4.4.4.4
+
+tenant_info:
+    - {vlan_id:100 , vrf_name: vxlan, l2_vni:10000, ip_address:100.1.1.1/24 }
+
+l3_vxlan:
+    - {vlan_id:101,vrf_name:vxlan,l3_vni:40000}

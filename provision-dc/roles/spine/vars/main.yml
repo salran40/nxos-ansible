@@ -1,0 +1,23 @@
+---
+# Spine 
+
+spine_features: 
+  - ospf
+  - bgp
+  - pim
+  - lldp
+  - nxapi
+
+bgp_neighbors:
+    - 5.5.5.5
+    - 6.6.6.6
+    
+
+# PIM Global Configuration
+ip_loopback1: 12.12.12.12
+pim_rp_address: 12.12.12.12
+pim_anycast_rp: 
+  - {rp_address: 12.12.12.12, rp_address_set: 3.3.3.3 }
+  - {rp_address: 12.12.12.12, rp_address_set: 4.4.4.4 }
+
+

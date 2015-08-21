@@ -1,0 +1,28 @@
+
+router bgp 65000
+  router-id 4.4.4.4
+  address-family ipv4 unicast
+  address-family l2vpn evpn
+    retain route-target all
+  template peer vtep-peer
+    remote-as 65000
+    update-source loopback0
+    address-family ipv4 unicast
+      send-community both
+      route-reflector-client
+    address-family l2vpn evpn
+      send-community both
+      route-reflector-client
+  neighbor 1.1.1.1
+    inherit peer vtep-peer
+  neighbor 2.2.2.2
+    inherit peer vtep-peer
+  neighbor 5.5.5.5
+    inherit peer vtep-peer
+  neighbor 6.6.6.6
+    inherit peer vtep-peer
+  neighbor 7.7.7.7
+    inherit peer vtep-peer
+  neighbor 8.8.8.8
+    inherit peer vtep-peer
+
