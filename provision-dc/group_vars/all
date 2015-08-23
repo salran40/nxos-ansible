@@ -14,6 +14,7 @@ bgp_as: "65000"
 
 # PIM
 
+pim_rp_address: 12.12.12.12
 pim_group_list: 224.0.0.0/4
 pim_ssm_range: 232.0.0.0/8
 mcast_group: 239.1.1.1

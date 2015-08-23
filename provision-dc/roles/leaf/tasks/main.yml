@@ -1,41 +1,315 @@
+---
 
-############################################################
-#  VLAN CONFIGURATION
-############################################################
-- name: ensure VLANs exist on switches
-  nxos_vlan: vlan_id={{ vlans }} state=present host={{ inventory_hostname }}
+#####
+#  Enable Features via nxos_feature
+#####
 
-- name: ensure names exist for important vlans
-  nxos_vlan: vlan_id={{ item.vlan_id }} name={{ item.name }} host={{ inventory_hostname }} state=present
-  with_items: named_leaf_vlans
+- name: ensure Features are Enabled on switches
+  nxos_feature: feature={{ item }} state=enabled host={{ inventory_hostname }}
+  with_items: "{{ leaf_features }}"
 
+####
+# Enable remaining features via nxos_command
+# TODO : Move to nxos_feature - sent pull request
+####
 
-#############################################################
-# Layer 2 switchport configs
-#############################################################
-- name: L2 config for uplinks
-  nxos_switchport: interface={{ item }} mode=trunk native_vlan=99 trunk_vlans=2-19 host={{ inventory_hostname }}
-  with_items: uplink_interfaces
-
-#############################################################
-# Portchannels
-#############################################################
-- name: portchannel for uplinks
-  nxos_portchannel:
-    group: 100
-    members: "{{ uplink_interfaces }}"
-    mode: active
+- name: Ensure additional features are enabled on switches
+  nxos_command: 
     host: "{{ inventory_hostname }}"
-    state: present
+    type: config
+    command: ['feature nv overlay', 'nv overlay evpn']
 
-#############################################################
-# Layer 3 Configuration
-#############################################################
+#####
+#  Loopback and L3 Interfaces
+#####
+- name: Underlay Loopback
+  nxos_interface:  interface=loopback0 host={{ inventory_hostname }} admin_state=up mode=layer3
 
-- name: create logical vlan interfaces
-  nxos_interface: interface={{ item }} host={{ inventory_hostname }}
-  with_items: logical_interfaces_to_create
+- name: Underlay Loopback IP
+  nxos_ipv4_interface: interface=loopback0 ip_addr={{ ip_loopback0 }} mask=32 host={{ inventory_hostname}} state=present
 
-- name: assign IP addresses
-  nxos_ipv4_interface: interface={{ item.interface }} ip_addr={{ item.ip }} mask={{ item.mask }} host={{ inventory_hostname }}
-  with_items: layer3ip
+#####
+# L3 Interface
+#####
+
+- name : Underlay Interfaces
+  nxos_interface: interface={{ item.intf }} host={{ inventory_hostname }} admin_state=up mode=layer3 description='{{ item.description }}'
+  with_items: "{{ leaf_spine_interfaces }}"
+
+- name : Underlay Interfaces IP
+  nxos_ipv4_interface: interface={{ item.intf }} ip_addr={{ item.intf_ip }} mask={{ item.mask }} host={{ inventory_hostname}} state=present
+  with_items:
+    - "{{ leaf_spine_interfaces }}"
+
+
+- name : Interfaces connected to Hosts
+  nxos_interface: interface={{ item.intf }} host={{ inventory_hostname }} admin_state=up mode=layer2 description='{{ item.description }}'
+  with_items:
+    - "{{ host_interfaces }}"
+
+- name: L2 Interface - make access port and assign vlan
+  nxos_switchport: interface={{ item.intf }} host={{ inventory_hostname }} mode=access access_vlan={{ item.vlan_id }}
+  with_items:
+    - "{{ host_interfaces }}"
+
+- name : Ensure Interfaces are up
+  nxos_interface:
+    interface: "{{ item.intf }}"
+    host: "{{ inventory_hostname }}"
+    admin_state: up
+  with_items: 
+    - "{{ leaf_spine_interfaces}}"
+    - "{{ host_interfaces }}"
+
+
+###
+- name : Enable OSPF
+  nxos_command:
+    host: "{{ inventory_hostname }}"
+    type: config
+    command: "router ospf 1"
+
+###
+
+
+######
+# IP PIM Global Configuration
+######
+
+- name: Configure PIM RP-adrdress
+  nxos_command:
+    host: "{{ inventory_hostname }}"
+    type: config
+    command: ['ip pim rp-address {{ pim_rp_address }} group-list {{ pim_group_list }} ', 'ip pim ssm range {{ pim_ssm_range }}']
+
+
+### Configure OSPF on Interfaces
+- name: Configure OSPF on Ethernet  Interfaces
+  nxos_command:
+    host: "{{ inventory_hostname }}"
+    type: config
+    command: ['interface {{ item.intf }} ', 'ip ospf network point-to-point', 'ip router ospf 1 area 0.0.0.0']
+  with_items: "{{ leaf_spine_interfaces }}"
+
+
+- name: Configure OSPF on Loopbacks
+  nxos_command:
+    host: "{{ inventory_hostname }}"
+    type: config
+    command: ['interface {{ item }} ', 'ip ospf network point-to-point', 'ip router ospf 1 area 0.0.0.0']
+  with_items:
+    - loopback0
+
+
+# Configure PIM on interfaces 
+- name: Configure PIM on Interfaces
+  nxos_command:
+    host: "{{ inventory_hostname }}"
+    type: config
+    command:
+        - 'interface {{ item.intf }}'
+        - 'ip pim sparse-mode'
+  with_items:
+    - "{{ leaf_spine_interfaces }}"
+
+ # Configure PIM on Loopback interfaces 
+- name: Configure PIM on Loopback Interfaces
+  nxos_command:
+    host: "{{ inventory_hostname }}"
+    type: config
+    command:
+        - 'interface {{ item }}'
+        - 'ip pim sparse-mode'
+  with_items:
+    - loopback0
+
+
+# Configure Overlay Items
+# Configure VRFs
+- name: Configure VRF Context
+  nxos_vrf:
+    host: "{{ inventory_hostname }}"
+    vrf: "{{ item.vrf_name }}"
+  with_items: "{{ l3_vxlan }}"
+
+# Configure AF in VRF
+- name: Configure Address Family in VRF
+  nxos_command:
+    host: "{{ inventory_hostname }}"
+    type: config
+    command:
+      - 'vrf context {{ item.vrf_name }}'
+      - '  vni {{ item.l3_vni }}'
+      - '  rd auto'
+      - '  address-family ipv4 unicast'
+      - '     route-target both auto'
+      - '     route-target both auto evpn'
+  with_items: "{{ l3_vxlan }}"
+
+# Configure VLAN 1 
+- name: Configure VLAN 1
+  nxos_command:
+    host: "{{ inventory_hostname }}"
+    type: config
+    command:
+      - 'interface vlan 1'
+      - '  no shutdown'
+      - '  no ip redirects'
+      - '  no ipv6 redirects'
+
+
+# Configure L2 VLANs
+- name: Configure L2 VLANs
+  nxos_command:
+    host: "{{ inventory_hostname }}"
+    type: config
+    command:
+      - 'vlan {{ item.vlan_id }}'
+      - '  name {{ item.name }}'
+      - '  vn-segment {{ item.l2_vni }}'
+
+  with_items: "{{ tenant_info}}"
+
+# Configure L3 VLANs
+- name: Configure L3 VLANs
+  nxos_command:
+    host: "{{ inventory_hostname }}"
+    type: config
+    command:
+      - 'vlan {{ item.vlan_id }}'
+      - ' name {{ item.name }}'
+      - '  vn-segment {{ item.l3_vni }}'
+  with_items: "{{ l3_vxlan }}"
+
+# Configure BGP settings
+- name : Configure route-map
+  nxos_command:
+    host: "{{ inventory_hostname }}"
+    type: config
+    command:
+      - 'route-map passall permit 10'
+
+
+- name: Configure BGP Initial Configs
+  nxos_command:
+    host: "{{ inventory_hostname }}"
+    type: config
+    command:
+      - 'router bgp {{ bgp_as }}'
+      - ' router-id {{ ip_loopback0 }}'
+      - ' address-family ipv4 unicast'
+      - ' address-family l2vpn evpn'
+      - '   retain route-target all'
+      - ' template peer vtep-peer'
+      - '   remote-as {{ bgp_as }}'
+      - '   update-source loopback0'
+      - '   address-family ipv4 unicast'
+      - '     send-community both'
+      - '     route-reflector-client'
+      - '   address-family l2vpn evpn'
+      - '     send-community both'
+      - '     route-reflector-client'
+
+- name: Configure BGP Neighbors (Leafs)
+  nxos_command:
+    host: "{{ inventory_hostname}}"
+    type: config
+    command:
+      - 'router bgp {{ bgp_as }}'
+      - ' neighbor {{ item }}'
+      - '   inherit peer vtep-peer'
+  with_items: "{{ bgp_neighbors }}" 
+
+- name: Configure Tenant  VRFs under BGP (Leafs)
+  nxos_command:
+    host: "{{ inventory_hostname }}"
+    type: config
+    command:
+      - 'router bgp {{ bgp_as }}'
+      - ' vrf {{ item.vrf_name }}'
+      - ' address-family ipv4 unicast'
+      - '  advertise l2vpn evpn'
+      - '  redistribute direct route-map passall'
+      - '  maximum-paths 32'
+      - '  maximum-paths ibgp 32'
+  with_items: "{{ l3_vxlan }}"
+  ignore_errors: yes
+
+- name: Configure anycast gateway mac
+  nxos_command:
+    host: "{{ inventory_hostname }}"
+    type: config
+    command:
+      - 'fabric forwarding anycast-gateway-mac {{ anycast_gw_mac }}'
+
+- name: Configure NVE Interface and L2 VNI
+  nxos_command:
+    host: "{{ inventory_hostname }}"
+    type: config
+    command:
+    - ' interface nve1'
+    - ' no shutdown'
+    - ' source-interface loopback0'
+    - ' host-reachability protocol bgp'
+    - ' member vni {{ item.l2_vni }}'
+    - '  suppress-arp'
+    - '  mcast-group {{ mcast_group }}'
+  with_items: "{{ tenant_info }}"
+
+- name: Configure NVE L3  VNI
+  nxos_command:
+    host: "{{ inventory_hostname }}"
+    type: config
+    command:
+    - ' interface nve1'
+    - ' no shutdown'
+    - ' source-interface loopback0'
+    - ' host-reachability protocol bgp'
+    - ' member vni {{ item.l3_vni }} associate-vrf'
+  with_items: "{{ l3_vxlan }}"
+  
+
+- name: Configure evpn
+  nxos_command:
+    host: "{{ inventory_hostname }}"
+    type: config
+    command:
+    - 'evpn'
+    - '  vni {{ item.l2_vni }} l2'
+    - '     rd auto'
+    - '     route-target import auto'
+    - '     route-target export auto'
+  with_items: "{{ tenant_info }}"
+
+
+# Configure Tenant SVIs
+- name: Configure Tenant SVIs
+  nxos_command:
+    host: "{{ inventory_hostname }}"
+    type: config
+    command:
+      - 'interface vlan {{ item.vlan_id }}'
+      - '  vrf member {{ item.vrf_name }}'
+      - '  description {{ item.description }}'
+      - '  no ip redirects'
+      - '  no ipv6 redirects'
+      - '  ip address {{ item.ip_address }}/{{ item.mask }}'
+      - '  fabric forwarding mode anycast-gateway'
+      - '  no shutdown'
+  with_items: "{{ tenant_info }}"
+
+# Configure L3 VNI  SVIs
+- name: Configure L3 VNI SVIs
+  nxos_command:
+    host: "{{ inventory_hostname }}"
+    type: config
+    command:
+      - 'interface vlan {{ item.vlan_id }}'
+      - '  vrf member {{ item.vrf_name }}'
+      - '  description {{ item.description }}'
+      - '  no ip redirects'
+      - '  no ipv6 redirects'
+      - '  ip forward'
+      - '  no shutdown'
+  with_items: "{{ l3_vxlan }}"
+

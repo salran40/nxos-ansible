@@ -19,8 +19,8 @@
   roles:
     - role: leaf
 
-- hosts: all
-  tasks:
-    - name: save config
-      nxos_save_config: host={{ inventory_hostname }}
+# hosts: all
+#  tasks:
+#    - name: save config
+#      nxos_save_config: host={{ inventory_hostname }}
 

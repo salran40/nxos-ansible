@@ -3,5 +3,5 @@
 ip_loopback0: 4.4.4.4
 
 spine_leaf_interfaces:
-    - {intf: Ethernet2/23, intf_ip: 10.1.1.14, mask: 30 }
-    - {intf: Ethernet2/31, intf_ip: 10.1.1.2, mask: 30 }
+    - {intf: Ethernet2/23, intf_ip: 10.1.1.14, mask: 30, description: "Leaf1 Connectivity" }
+    - {intf: Ethernet2/31, intf_ip: 10.1.1.2, mask: 30, description: "Leaf2 Connectivity" }

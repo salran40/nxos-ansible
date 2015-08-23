@@ -4,9 +4,12 @@
 #  Enable Features via nxos_feature
 #####
 
-#- name: ensure Features are Enabled on switches
-#  nxos_feature: feature={{ item }} state=enabled host={{ inventory_hostname }}
-#  with_items: "{{ spine_features }}"
+- name: ensure Features are Enabled on switches
+  nxos_command:
+    host: "{{ inventory_hostname }}"
+    type: config
+    command: 'feature {{ item }}'
+  with_items: "{{ spine_features }}"
 
 ####
 # Enable remaining features via nxos_command
@@ -33,7 +36,7 @@
 #####
 
 - name : Underlay Interfaces
-  nxos_interface: interface={{ item.intf }} host={{ inventory_hostname }} admin_state=up mode=layer3 
+  nxos_interface: interface={{ item.intf }} host={{ inventory_hostname }} admin_state=up mode=layer3 description='{{ item.description }}'
   with_items: "{{ spine_leaf_interfaces }}"
 
 - name : Underlay Interfaces IP
@@ -89,4 +92,59 @@
   with_items:
     - loopback0
     - loopback1
+
+
+# Configure PIM on interfaces 
+- name: Configure PIM on Interfaces
+  nxos_command:
+    host: "{{ inventory_hostname }}"
+    type: config
+    command:
+        - 'interface {{ item.intf }}'
+        - 'ip pim sparse-mode'
+  with_items:
+    - "{{ spine_leaf_interfaces }}"
+  
+ # Configure PIM on Loopback interfaces 
+- name: Configure PIM on Loopback Interfaces
+  nxos_command:
+    host: "{{ inventory_hostname }}"
+    type: config
+    command:
+        - 'interface {{ item }}'
+        - 'ip pim sparse-mode'
+  with_items:
+    - loopback0
+    - loopback1
+  
+# Configure BGP 
+- name: Configure BGP Initial Configs
+  nxos_command:
+    host: "{{ inventory_hostname }}"
+    type: config
+    command:
+      - 'router bgp {{ bgp_as }}'
+      - ' router-id {{ ip_loopback0 }}'
+      - ' address-family ipv4 unicast'
+      - ' address-family l2vpn evpn'
+      - '   retain route-target all'
+      - ' template peer vtep-peer'
+      - '   remote-as {{ bgp_as }}'
+      - '   update-source loopback0'
+      - '   address-family ipv4 unicast'
+      - '     send-community both'
+      - '     route-reflector-client'
+      - '   address-family l2vpn evpn'
+      - '     send-community both'
+      - '     route-reflector-client'
+
+- name: Configure BGP Neighbors (Leafs)
+  nxos_command:
+    host: "{{ inventory_hostname}}"
+    type: config
+    command:
+      - 'router bgp {{ bgp_as }}'
+      - ' neighbor {{ item }}'
+      - '   inherit peer vtep-peer'
+  with_items: "{{ bgp_neighbors }}" 
 

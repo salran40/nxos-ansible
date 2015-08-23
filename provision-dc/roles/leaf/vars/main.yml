@@ -12,7 +12,9 @@ bgp_neighbors:
     - 4.4.4.4
 
 tenant_info:
-    - { vlan_id: 100, vrf_name: vxlan, l2_vni: 10000, ip_address: 100.1.1.1/24 }
+    - { vlan_id: 100, vrf_name: vxlan, l2_vni: 10000, ip_address: 100.1.1.1, mask: 24, name: 'bbaccess', description: 'SVI for VRF vxlan traffic' }
 
 l3_vxlan:
-    - { vlan_id: 101,vrf_name: vxlan, l3_vni: 40000}
+    - { vlan_id: 101, vrf_name: vxlan, l3_vni: 40000, name: 'l3vnivlan', description: 'SVI for L3 VNI mapping'}
+
+anycast_gw_mac: 0006.0006.0006
