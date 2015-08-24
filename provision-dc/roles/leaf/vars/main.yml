@@ -5,8 +5,7 @@ leaf_features:
     - bgp
     - pim
     - interface-vlan
-    - vn-segment-vlan-based
-
+    
 bgp_neighbors:
     - 3.3.3.3
     - 4.4.4.4

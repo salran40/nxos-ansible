@@ -17,7 +17,7 @@
   nxos_command: 
     host: "{{ inventory_hostname }}"
     type: config
-    command: ['feature nv overlay', 'nv overlay evpn']
+    command: ['feature vn-segment-vlan-based', 'feature nv overlay', 'nv overlay evpn']
 
 #####
 #  Loopback and L3 Interfaces
@@ -312,4 +312,3 @@
       - '  ip forward'
       - '  no shutdown'
   with_items: "{{ l3_vxlan }}"
-

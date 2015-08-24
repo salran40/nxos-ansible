@@ -1,9 +1,11 @@
 ---
 
+host_name: N9300-1
+
 ip_loopback0: 5.5.5.5
 
 leaf_spine_interfaces:
-    - {intf: Ethernet1/15, intf_ip: 10.1.1.9, mask: 30, description: 'Spine1 Connectivity' }
+    - {intf: Ethernet1/15, intf_ip: 10.1.1.9, mask: 30, description: 'hello Connectivity' }
     - {intf: Ethernet1/31, intf_ip: 10.1.1.1, mask: 30, description: 'Spine2 Connectivity' }
 
 host_interfaces:

@@ -1,0 +1,21 @@
+- hosts: leaf01
+  
+  tasks: 
+  - name: Enter Maintenance mode
+    nxos_command:
+        host: "{{ inventory_hostname }}"
+        type: config
+        command: 
+            - 'terminal dont-ask'
+            - 'system mode maintenance dont-generate-profile'
+    tags: enter
+
+
+  - name: Exit  Maintenance mode
+    nxos_command:
+        host: "{{ inventory_hostname }}"
+        type: config
+        command: 
+            - 'terminal dont-ask'
+            - 'no system mode maintenance dont-generate-profile'
+    tags: exit

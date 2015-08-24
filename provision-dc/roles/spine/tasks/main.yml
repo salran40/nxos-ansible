@@ -147,4 +147,3 @@
       - ' neighbor {{ item }}'
       - '   inherit peer vtep-peer'
   with_items: "{{ bgp_neighbors }}" 
-

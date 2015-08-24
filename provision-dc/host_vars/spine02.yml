@@ -1,5 +1,8 @@
 ---
 
+host_name: abmodi_n77_down-vdc_1
+
+
 ip_loopback0: 3.3.3.3
 
 spine_leaf_interfaces:

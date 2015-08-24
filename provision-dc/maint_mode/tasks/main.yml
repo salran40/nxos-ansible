@@ -1,0 +1,48 @@
+---
+
+###
+# maint_mode
+###
+
+- name: Gather Routing Table
+  nxos_command:
+    host: "{{ inventory_hostname }}"
+    type: show
+    command: show ip route vrf all
+  register: routing_table
+
+# - name: Print Routing Table
+#   debug:
+#     msg: |
+#         Routing Table
+#         {{routing_table | to_nice_json}}
+
+
+- name: Mail Table
+  mail:
+    subject: "{{ inventory_hostname}} Routing Table"
+    body: |
+        Routing Table
+        " {{routing_table.results.TABLE_vrf.ROW_vrf | to_nice_json}} "
+
+
+- name: Gather Mac Address Table
+  nxos_command:
+    host: "{{ inventory_hostname }}"
+    type: show
+    command: show mac address-table
+  register: mac_table
+
+# - name: Print Routing Table
+#   debug:
+#     msg: |
+#         Routing Table
+#         {{routing_table | to_nice_json}}
+
+
+- name: Mail Mac Table
+  mail:
+    subject: "{{ inventory_hostname}} Mac Table"
+    body: |
+        Mac Table
+        " {{mac_table.results.TABLE_mac_address.ROW_mac_address | to_nice_json}} "

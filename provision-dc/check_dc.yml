@@ -1,0 +1,21 @@
+---
+# This Playbook stands up dual-core and a single leaf
+# It assigns an IP to an SVI on the leaf to be used for
+# testing connectivity without any hosts
+# Add more host_vars files to scale out
+
+# Playbook : provision_dc.yml
+# Purpose : Provision the following topology
+
+#   2 Spines : Nexus 7k
+#   2 Leafs : Nexus 9300
+
+
+- hosts: spine
+  roles:
+    - role: check_spine
+
+- hosts: leaf
+  roles:
+    - role: check_leaf
+

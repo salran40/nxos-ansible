@@ -1,0 +1,51 @@
+---
+
+# check_leaf/main.yml
+
+# Check Hostname is correct
+
+
+- name: check hostname
+  nxos_get_facts: host={{ inventory_hostname }}
+  register: my_data
+
+- mail: subject="On {{ inventory_hostname }} Host name expected {{ host_name }} , found {{ my_data.ansible_facts.hostname }}"
+  when: my_data.ansible_facts.hostname != host_name
+
+
+  # Check inteface description is correct.
+
+
+- name: Check Interface descriptions
+  nxos_command:
+    host: "{{ inventory_hostname }}"
+    type: show
+    command: "show interface  {{item.intf}}"
+  register: intf_data
+  with_items: "{{leaf_spine_interfaces}}"
+
+
+
+- name: Mail incorrect Interface Descriptions
+  mail:
+    subject: "{{ inventory_hostname}} {{item.1.intf}} Description Out of Policy"
+    body: |
+        Interface : {{item.1.intf}} Description is incorrect
+        Actual: {{item.0.results.TABLE_interface.ROW_interface.desc}}
+        Expected : {{item.1.description}}
+  when: item.0.results.TABLE_interface.ROW_interface.desc != item.1.description
+  with_together:
+    - intf_data.results
+    - "{{leaf_spine_interfaces}}"
+
+- name: Check IP Addresses
+  mail:
+    subject: "{{ inventory_hostname}} {{item.1.intf}} IP  Out of Policy"
+    body: |
+        Interface  {{item.1.intf}} IP Address  is incorrect
+        Actual: {{item.0.results.TABLE_interface.ROW_interface.eth_ip_addr}}
+        Expected : {{item.1.intf_ip}}
+  when: item.0.results.TABLE_interface.ROW_interface.eth_ip_addr != item.1.intf_ip
+  with_together:
+    - intf_data.results
+    - "{{leaf_spine_interfaces}}"
