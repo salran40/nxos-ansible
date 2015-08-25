@@ -6,5 +6,5 @@ host_name: abmodi_n77_up-vdc_1
 ip_loopback0: 4.4.4.4
 
 spine_leaf_interfaces:
-    - {intf: Ethernet2/23, intf_ip: 10.1.1.14, mask: 30, description: "Leaf1 Connectivity" }
-    - {intf: Ethernet2/31, intf_ip: 10.1.1.2, mask: 30, description: "Leaf2 Connectivity" }
+    - {intf: Ethernet2/23, intf_ip: 10.1.1.14, mask: 30, description: "Leaf02 Connectivity" }
+    - {intf: Ethernet2/31, intf_ip: 10.1.1.2, mask: 30, description: "Leaf01 Connectivity" }

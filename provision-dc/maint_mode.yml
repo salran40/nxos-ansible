@@ -1,4 +1,6 @@
-- hosts: leaf01
+---
+
+- hosts: leaf
   
   tasks: 
   - name: Enter Maintenance mode
