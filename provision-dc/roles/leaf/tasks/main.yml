@@ -47,19 +47,6 @@
   with_items:
     - "{{ host_interfaces }}"
 
-- name: L2 Interface - make access port and assign vlan
-  nxos_switchport: interface={{ item.intf }} host={{ inventory_hostname }} mode=access access_vlan={{ item.vlan_id }}
-  with_items:
-    - "{{ host_interfaces }}"
-
-- name : Ensure Interfaces are up
-  nxos_interface:
-    interface: "{{ item.intf }}"
-    host: "{{ inventory_hostname }}"
-    admin_state: up
-  with_items: 
-    - "{{ leaf_spine_interfaces}}"
-    - "{{ host_interfaces }}"
 
 
 ###
@@ -312,3 +299,17 @@
       - '  ip forward'
       - '  no shutdown'
   with_items: "{{ l3_vxlan }}"
+
+- name: L2 Interface - make access port and assign vlan
+  nxos_switchport: interface={{ item.intf }} host={{ inventory_hostname }} mode=access access_vlan={{ item.vlan_id }}
+  with_items:
+    - "{{ host_interfaces }}"
+
+- name : Ensure Interfaces are up
+  nxos_interface:
+    interface: "{{ item.intf }}"
+    host: "{{ inventory_hostname }}"
+    admin_state: up
+  with_items: 
+    - "{{ leaf_spine_interfaces}}"
+    - "{{ host_interfaces }}"
