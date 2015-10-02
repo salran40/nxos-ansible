@@ -9,4 +9,4 @@
   tasks:
 
     # retrieve details info and stats on an interface (from 'show interface')
-    - nxos_get_interface: interface=Ethernet1/1 host={{ inventory_hostname }}
+    - nxos_get_interface: interface=mgmt0 host={{ inventory_hostname }}
